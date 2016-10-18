@@ -18,6 +18,7 @@ import org.junit.runners.Parameterized.Parameters;
 import com.google.common.io.ByteSource;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
+import com.google.i18n.phonenumbers.PhoneNumberUtil;
 
 import businesscard.ContactInfo;
 import businesscard.EmailAddress;
@@ -138,7 +139,8 @@ public final class BusinessCardParserImplIT {
   private ContactInfo actual() throws Exception {
     BusinessCardParser toTest = new BusinessCardParserImpl(
         new TokenizerME(new TokenizerModel(tokensModel)),
-        new NameFinderME(new TokenNameFinderModel(personModel))
+        new NameFinderME(new TokenNameFinderModel(personModel)),
+        PhoneNumberUtil.getInstance()
     );
     return toTest.getContactInfo(input);
   }

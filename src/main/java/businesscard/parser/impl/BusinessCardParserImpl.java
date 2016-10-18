@@ -1,14 +1,19 @@
 package businesscard.parser.impl;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
+import com.google.i18n.phonenumbers.PhoneNumberMatch;
+import com.google.i18n.phonenumbers.PhoneNumberUtil;
 
 import businesscard.ContactInfo;
 import businesscard.EmailAddress;
@@ -22,19 +27,25 @@ import opennlp.tools.util.Span;
 public final class BusinessCardParserImpl implements BusinessCardParser {
   private final Tokenizer tokenizer;
   private final TokenNameFinder nameFinder;
+  private final PhoneNumberUtil phoneNumberFinder;
   private final Pattern newLine = Pattern.compile("\r?\n");
   private final Pattern email = Pattern.compile("[.\\w]++@[.\\w]++");
 
-  public BusinessCardParserImpl(Tokenizer tokenizer, TokenNameFinder names) {
+  public BusinessCardParserImpl(
+      Tokenizer tokenizer,
+      TokenNameFinder nameFinder,
+      PhoneNumberUtil phoneNumberFinder
+  ) {
     this.tokenizer = tokenizer;
-    this.nameFinder = names;
+    this.nameFinder = nameFinder;
+    this.phoneNumberFinder = phoneNumberFinder;
   }
 
   @Override
   public ContactInfo getContactInfo(String document) {
     return new ContactInfo(
         new Name(mostLikelyName(document).orElse("")),
-        new PhoneNumber(""),
+        new PhoneNumber(mostLikelyPhoneNumber(document).orElse("")),
         new EmailAddress(onlyMatch(email, document).orElse(""))
     );
   }
@@ -79,6 +90,41 @@ public final class BusinessCardParserImpl implements BusinessCardParser {
           .compare(probability, o.probability, Ordering.natural().reverse())
           .compare(value, o.value)
           .result();
+    }
+  }
+
+  private Optional<String> mostLikelyPhoneNumber(String document) {
+    List<PossiblePhoneNumber> all = possiblePhoneNumbers(document);
+    if (all.size() == 1) {
+      return Optional.of(all.get(0).value);
+    } else if (all.size() >= 2) {
+      List<PossiblePhoneNumber> filtered = all.stream().filter(
+          match -> match.wholeLine.matches("(Tel|Phone):.*+")
+      ).collect(Collectors.toList());
+      if (filtered.size() == 1) {
+        return Optional.of(filtered.get(0).value);
+      }
+    }
+    return Optional.empty();
+  }
+
+  private List<PossiblePhoneNumber> possiblePhoneNumbers(String document) {
+    List<PossiblePhoneNumber> all = new ArrayList<>();
+    for (String line : newLine.split(document)) {
+      for (PhoneNumberMatch match : phoneNumberFinder.findNumbers(line, "US")) {
+        all.add(new PossiblePhoneNumber(line, match.rawString()));
+      }
+    }
+    return all;
+  }
+
+  private static final class PossiblePhoneNumber {
+    final String wholeLine;
+    final String value;
+
+    PossiblePhoneNumber(String wholeLine, String value) {
+      this.wholeLine = wholeLine;
+      this.value = value;
     }
   }
 
