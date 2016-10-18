@@ -43,24 +43,25 @@ public final class BusinessCardParserImpl implements BusinessCardParser {
 
   @Override
   public ContactInfo getContactInfo(String document) {
+    String[] lines = newLine.split(document);
     return new ContactInfo(
-        new Name(mostLikelyName(document).orElse("")),
-        new PhoneNumber(mostLikelyPhoneNumber(document).orElse("")),
+        new Name(mostLikelyName(lines).orElse("")),
+        new PhoneNumber(mostLikelyPhoneNumber(lines).orElse("")),
         new EmailAddress(onlyMatch(email, document).orElse(""))
     );
   }
 
-  private Optional<String> mostLikelyName(String document) {
-    Queue<PossibleName> all = possibleNames(document);
+  private Optional<String> mostLikelyName(String[] lines) {
+    Queue<PossibleName> all = possibleNames(lines);
     return !all.isEmpty() ? Optional.of(all.peek().value) : Optional.empty();
   }
 
   /**
    * Ordered by most likely to least likely.
    */
-  private Queue<PossibleName> possibleNames(String document) {
+  private Queue<PossibleName> possibleNames(String[] lines) {
     Queue<PossibleName> found = new PriorityQueue<>();
-    for (String sentence : newLine.split(document)) {
+    for (String sentence : lines) {
       String[] foundTokens = tokenizer.tokenize(sentence);
       Span[] spans = nameFinder.find(foundTokens);
       for (Span span : spans) {
@@ -93,8 +94,8 @@ public final class BusinessCardParserImpl implements BusinessCardParser {
     }
   }
 
-  private Optional<String> mostLikelyPhoneNumber(String document) {
-    List<PossiblePhoneNumber> all = possiblePhoneNumbers(document);
+  private Optional<String> mostLikelyPhoneNumber(String[] lines) {
+    List<PossiblePhoneNumber> all = possiblePhoneNumbers(lines);
     if (all.size() == 1) {
       return Optional.of(all.get(0).value);
     } else if (all.size() >= 2) {
@@ -108,9 +109,9 @@ public final class BusinessCardParserImpl implements BusinessCardParser {
     return Optional.empty();
   }
 
-  private List<PossiblePhoneNumber> possiblePhoneNumbers(String document) {
+  private List<PossiblePhoneNumber> possiblePhoneNumbers(String[] lines) {
     List<PossiblePhoneNumber> all = new ArrayList<>();
-    for (String line : newLine.split(document)) {
+    for (String line : lines) {
       for (PhoneNumberMatch match : phoneNumberFinder.findNumbers(line, "US")) {
         all.add(new PossiblePhoneNumber(line, match.rawString()));
       }
