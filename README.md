@@ -1,3 +1,10 @@
+Building
+========
+
+~~~
+./mvnw clean verify
+~~~
+
 Problem
 =======
 
@@ -78,3 +85,18 @@ Name: Arthur Wilson
 Phone: 17035551259
 Email: awilson@abctech.com
 ~~~
+
+How
+===
+
+The current implementation uses [libphonenumber](https://github.com/googlei18n/libphonenumber) and [opennlp](https://opennlp.apache.org/).
+
+Possible improvements
+=====================
+
+* Better handle possible `key: value` hints.
+  * E.G. `Name: John Doe` or `Email: foo@bar.com`
+* Pull out other data
+  * E.G. `address` or `job title`
+* Handle more complicated email addresses
+* Handle more complicated phone numbers
