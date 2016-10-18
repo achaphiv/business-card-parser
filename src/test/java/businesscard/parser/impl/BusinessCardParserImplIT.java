@@ -87,21 +87,21 @@ public final class BusinessCardParserImplIT {
   }
 
   @Test
-  public void correctName() {
+  public void correctName() throws Exception {
     assertThat(actual().name()).isEqualTo(expected.name());
   }
 
   @Test
-  public void correctPhoneNumber() {
+  public void correctPhoneNumber() throws Exception {
     assertThat(actual().phoneNumber()).isEqualTo(expected.phoneNumber());
   }
 
   @Test
-  public void correctEmailAddress() {
+  public void correctEmailAddress() throws Exception {
     assertThat(actual().emailAddress()).isEqualTo(expected.emailAddress());
   }
 
-  private ContactInfo actual() {
+  private ContactInfo actual() throws Exception {
     return new BusinessCardParserImpl().getContactInfo(input);
   }
 }
